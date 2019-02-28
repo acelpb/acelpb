@@ -13,6 +13,7 @@
 
       ./modules/annechristinefunk.nix
       ./modules/fiechegutierrez.nix
+      ./modules/jupyterhub.nix
       ./modules/mail-secret.nix
       ./modules/nextcloud.nix
       ./modules/normandy.nix
@@ -116,7 +117,7 @@
         extraConfig = ''
           location / {
 
-            proxy_pass http://jupyter.acelpb.com:8888;
+            proxy_pass http://localhost:8888;
             proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header Host $http_host;
@@ -165,32 +166,13 @@
   };
 
 
-  # services.jupyterhub = {
-  #   enable = true;
-  #   spawner = "dockerspawner";
-  #   # ip = "0.0.0.0";
-  #   # port = 8888;
-  #   # kernels = {
-  #   #   python3 = let
-  #   #     env = (pkgs.python3.withPackages (pythonPackages: with pythonPackages; [
-  #   #             ipykernel
-  #   #             boto3
-  #   #           ]));
-  #   #   in {
-  #   #     displayName = "Python 3";
-  #   #     argv = [
-  #   #       "${env}/bin/python"
-  #   #       "-m"
-  #   #       "ipykernel_launcher"
-  #   #       "-f"
-  #   #       "{connection_file}"
-  #   #     ];
-  #   #     language = "python";
-  #   #     logo32 = "${env.sitePackages}/ipykernel/resources/logo-32x32.png";
-  #   #     logo64 = "${env.sitePackages}/ipykernel/resources/logo-64x64.png";
-  #   #   };
-  #   # };
-  # };
+  services.jupyterhub = {
+    enable = true;
+    spawner = "dockerspawner";
+    ip = "0.0.0.0";
+    # user = "root";  # TODO: Currently pam login only work as root!!
+    # group = "root";
+  };
 
   virtualisation.docker.enable = true;
 
