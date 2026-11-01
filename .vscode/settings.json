@@ -1,0 +1,9 @@
+{
+  "terminal.integrated.profiles.osx": {
+    "nix-tools": {
+      "path": "podman",
+      "args": ["run", "--rm", "-it", "-v", "${workspaceFolder}:/src:z", "-v", "${env:HOME}/.ssh:/root/.ssh:ro,z", "-w", "/src", "acelpb-nix-tools", "/root/.nix-profile/bin/bash"]
+    }
+  },
+  "terminal.integrated.defaultProfile.osx": "nix-tools"
+}

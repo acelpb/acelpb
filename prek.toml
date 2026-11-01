@@ -1,0 +1,33 @@
+[[repos]]
+repo = "builtin"
+hooks = [
+  { id = "trailing-whitespace" },
+  { id = "end-of-file-fixer" },
+]
+
+[[repos]]
+repo = "local"
+hooks = [
+  {
+    id = "nixfmt",
+    name = "nixfmt",
+    entry = "podman run --rm -v .:/src:z -w /src acelpb-nix-tools nixfmt",
+    language = "system",
+    files = "\\.nix$",
+  },
+  {
+    id = "statix",
+    name = "statix",
+    entry = "podman run --rm -v .:/src:z -w /src acelpb-nix-tools statix check",
+    language = "system",
+    files = "\\.nix$",
+    pass_filenames = false,
+  },
+  {
+    id = "deadnix",
+    name = "deadnix",
+    entry = "podman run --rm -v .:/src:z -w /src acelpb-nix-tools deadnix --fail",
+    language = "system",
+    files = "\\.nix$",
+  },
+]
