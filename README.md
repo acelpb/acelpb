@@ -14,7 +14,7 @@ decides package versions.
 | Art gallery | annechristinefunk.com | `annechristinefunk.nix` | Django app from [acelpb/acfunk](https://github.com/acelpb/acfunk), in `/var/www/acfunk` |
 | Dynamobile sign-up | inscriptions.dynamobile.net | `dyn_signup.nix` | Container on port 7778, image tag `latest` |
 | Dynamobile sign-up (test) | inscriptions.acelpb.com | `dyn_signup.nix` | Container on port 7777, image tag `test` |
-| Nextcloud 34 | cloud.acelpb.com | `nextcloud.nix` | Data in `/var/www/nextcloud` |
+| Nextcloud 35 | cloud.acelpb.com | `nextcloud.nix` | Data in `/var/www/nextcloud` |
 | Collabora | collabora.acelpb.com | `nextcloud.nix` | Container on `127.0.0.1:9980`; the admin console needs an SSH tunnel |
 | Jenkins | jenkins.acelpb.com | `jenkins.nix` | Also runs the image registry on `localhost:5000` |
 | Mail | acelpb.com | `mail.nix` | NixOS mailserver; IMAP on 993, SMTP on 587; accounts in `distant-secret.nix` |
@@ -94,6 +94,11 @@ database upgrade, so the dump below is your only way back.
    ```
 
 3. Run `make deploy`. If the channel has moved, this also updates everything else.
+
+   The move to 35 ended with `nextcloud-setup` failing on `Could not resolve
+   OCP\AppFramework\Services\IAppConfig`, after `Update successful` in its log. The upgrade had
+   finished, and a check that runs after it had crashed. Do not roll back or deploy again. Run
+   `ssh ac 'sudo systemctl restart nextcloud-setup && sudo systemctl start nextcloud-update-db'`.
 4. Check that `https://cloud.acelpb.com/status.php` shows the new version with
    `needsDbUpgrade: false`, that `nextcloud-occ app:list` still shows your apps as enabled, and
    that a document opens in Collabora.
