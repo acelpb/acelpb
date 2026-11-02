@@ -1,41 +1,31 @@
 # AGENTS.md
 
-NixOS configuration for one production OVH VPS (`vps-0ce22064`, serving acelpb.com and
-several other sites). Changes here affect live services, including mail and personal data.
+NixOS configuration for one production OVH VPS. Changes here affect live services, including
+mail and personal data. See `README.md` for what runs where and how to deploy.
 
 ## Stack
 
-- NixOS on the `nixos-25.11` channel, with no flakes and no `flake.lock`. The channel on the
-  server decides package versions.
+- NixOS on the `nixos-26.05` channel, with no flakes and no `flake.lock`. The channel on the
+  server decides package versions. The mail server pin in `modules/mail.nix` must match
+  the channel.
 - `system.stateVersion = "23.11"`. Do not change it.
-- nginx with ACME in front of every web service, PostgreSQL 16, Nextcloud 32.
+- nginx with ACME in front of every web service, PostgreSQL 16, Nextcloud 33.
 - Podman is the `oci-containers` backend. Jenkins builds app images and pushes them to the
   local registry at `localhost:5000`.
 
 ## Layout
 
-`configuration.nix` is the entry point. Its `imports` list decides what is live, so check it
-before assuming a module is in use.
-
-| Status | Files |
-| --- | --- |
-| Active | `modules/normandy.nix`, `annechristinefunk.nix`, `jenkins.nix`, `dyn_signup.nix`, `dyn_signup_test.nix`, `mail-secret.nix`, `nextcloud.nix`, `immich.nix`, `postgres.nix` (all in `modules/`), plus `distant-secret.nix` and `hardware-configuration.nix` at the root |
-| Commented out | `modules/dynaform.nix`, `modules/minecraft.nix` |
-| Not imported | `modules/cockpit.nix`, `elk.nix`, `jupyterhub.nix`, `jupyterhub_old.nix`, `mail.nix`, `nextcloud.old/` |
-| Legacy | `distant.nix` imports `./acelpb.nix` and `./distant-hardware.nix`, which do not exist |
-
-Mail is configured by `modules/mail-secret.nix`, which is gitignored. Editing `modules/mail.nix`
-has no effect on the server.
-
-Do not edit inactive modules unless asked. Do not delete them either: the owner decides what
-gets retired.
+`configuration.nix` is the entry point. Its `imports` list decides what is live. Everything in
+`modules/` is imported except `minecraft.nix`, which is switched off. `distant-secret.nix` is
+ignored by git and holds users, SSH keys and mail accounts. When you add a setting to it, add a
+placeholder to `distant-secret.example.nix` too.
 
 ## Module conventions
 
 Each service gets one file with this shape:
 
 ```nix
-{ config, lib, pkgs, ... }:
+{ pkgs, ... }:
 {
   config = {
     # service definition, then its nginx virtual host
@@ -52,8 +42,7 @@ When adding a module:
   protect a published port.
 - Only add to `networking.firewall` when the service cannot go through nginx.
 - Check that a new port is free. Ports already taken include 2711 (Jenkins), 5000 (registry),
-  5432 (PostgreSQL), 7777 and 7778 (dyn_signup test and prod) and 9980 (Collabora). Immich also
-  has its own port (`services.immich.port`).
+  5432 (PostgreSQL), 7777 and 7778 (dyn_signup test and prod) and 9980 (Collabora).
 
 Apps that Jenkins deploys, such as `dyn_signup`, also need:
 
@@ -61,13 +50,14 @@ Apps that Jenkins deploys, such as `dyn_signup`, also need:
 - an image from `localhost:5000`
 - state and `.env` kept under `/var/www/<name>/`
 
-`dyn_signup.nix` and `dyn_signup_test.nix` are near-identical. Apply a change to both unless it
-is specific to one environment.
+Nextcloud apps come from Nix only, through `extraApps`. Do not enable the app store: it makes
+`occ upgrade` update packaged apps from the store, which crashes the upgrade.
 
 ## Secrets
 
-- `*secret.nix` and everything in `secrets/` are gitignored. Never force-add them, and do not
-  read or print them unless the task requires it.
+- `*secret.nix` and `secrets/` are gitignored. Never force-add them, and do not read or print
+  them unless the task requires it. If you must inspect one, mask both single- and double-quoted
+  values and anything inside comments.
 - Never add a new credential to a tracked `.nix` file. Reference a file instead, as in
   `adminpassFile = "/etc/nixos/secrets/nextcloud_adminpass";`.
 - For containers, use `environmentFiles` as in the Collabora config in `modules/nextcloud.nix`.
@@ -76,41 +66,33 @@ is specific to one environment.
 
 ## Deploying
 
-**Never deploy without an explicit instruction for that deploy.** That covers every `make`
-target below except `build-tools`, and any `sudo` or state-changing command over `ssh ac`.
-
-| Target | What it does |
-| --- | --- |
-| `make deploy` | Syncs the working tree to `ac:/etc/nixos`, then runs `nixos-rebuild switch --upgrade` |
-| `make dev` | Same, plus a force-push from `../nixpkgs` and a rebuild against that checkout |
-| `make deploy2` | Same as `deploy`, for host `ac2` |
-| `make cleanup` | Runs `nix-collect-garbage -d` on the server, which removes rollback generations |
+**Never deploy without an explicit instruction for that deploy.** That covers `make deploy`,
+`make cleanup`, and any `sudo` or state-changing command over `ssh ac`.
 
 What to expect from a deploy:
 
 - It ships the **working tree**, not a commit. Uncommitted changes go live, and git may not match
   the server.
 - `--upgrade` also updates the channel, so any deploy can bump service versions. Check release
-  notes for stateful services (Nextcloud, PostgreSQL, Immich) when that matters.
+  notes for stateful services (Nextcloud, PostgreSQL) when that matters.
 - `rsync -r` has no `--delete`, so files removed locally stay on the server.
 - The sync includes `secrets/`, `*secret.nix` and `.git`. Do not change the rsync flags or add
   excludes without checking that the server still gets the secret files it needs.
-- `ac2` is not in the owner's `~/.ssh/config` on this Mac, so `make deploy2` will not resolve as
-  things stand. Ask before working around that.
-- `../nixpkgs` is not checked out on this Mac, so `make dev` will fail as things stand.
+- Rolling back NixOS does not undo a Nextcloud database upgrade.
 
 ## Checking changes
 
-`nix` and `nixos-rebuild` are not installed on the Mac, so a full evaluation only happens on the
-server. Before handing over a change:
+Evaluating the configuration is not enough: the move to 26.05 passed evaluation and still broke
+two services at runtime. Before handing over a change:
 
 1. Look up option and package names with the `nixos` MCP server (see `.mcp.json`), using channel
-   `25.11`. Its default is `unstable`, which can differ from what is deployed.
-2. Check syntax through the tools image:
-   `podman run --rm -v .:/src:z -w /src acelpb-nix-tools nix-instantiate --parse <file>`
-3. Run the lint hooks (see below).
-4. Say plainly that the change has not been evaluated on the server. The owner confirms it when
-   deploying.
+   `26.05`. Its default is `unstable`, which can differ from what is deployed. Also check that a
+   package is not marked insecure: being listed does not mean it builds.
+2. Evaluate the whole configuration with the Podman command in `README.md`.
+3. For refactors, compare the system derivation before and after with `nix-diff`. It should show
+   no differences, or only the ones you intended.
+4. Run `prek run --all-files`.
+5. Say which of these you ran, and that nothing has been tested on the server.
 
 Read-only commands over `ssh ac` are fine for diagnosis, such as `systemctl status` or
 `nixos-version`. Do not print secrets or `.env` files while doing so.
@@ -118,18 +100,14 @@ Read-only commands over `ssh ac` are fine for diagnosis, such as `systemctl stat
 ## Formatting and linting
 
 `prek` runs as a pre-commit hook (`prek.toml`): trailing whitespace, end-of-file newline,
-`nixfmt`, `statix` and `deadnix`. The Nix tools run inside the `acelpb-nix-tools` image.
+`nixfmt`, `statix` and `deadnix`. The Nix tools run inside the `acelpb-nix-tools` image, which
+`make build-tools` creates. The podman machine must be running.
 
-- Build the image with `make build-tools`. The podman machine must be running.
-- `nixfmt` and the whitespace hooks rewrite files in place, and much of the repo is not yet
-  formatted. Expect noise in any file you touch, and keep formatting-only changes separate from
-  functional ones when you can.
-- The repo does not pass `deadnix`, `statix` or `nixfmt --check` yet, so the hook can fail on
-  existing code you did not touch. Report those failures rather than fixing them in passing.
+- `statix.toml` disables `repeated_keys` on purpose.
 - If the hook cannot run, do not bypass it with `--no-verify` without saying so. Report it.
 
 ## Git
 
 - `master` is the main branch. Commit, push or open a PR only when asked.
-- Stage specific files rather than using `git add -A`. The working tree often holds unrelated
-  changes, and `.DS_Store` and `.idea/` are tracked.
+- Stage specific files rather than using `git add -A` when the working tree holds unrelated
+  changes.

@@ -1,3 +1,6 @@
 *secret.nix
+secrets/
 .DS_Store
+.idea/
+*.sublime-project
 *.sublime-workspace

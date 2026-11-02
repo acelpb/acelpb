@@ -1,41 +1,32 @@
-{ config, lib, pkgs, ... }:
-let release = "nixos-25.11";
+{ config, ... }:
+let
+  release = "nixos-26.05";
 in
 {
+
   imports = [
     (builtins.fetchTarball {
+
       url = "https://gitlab.com/simple-nixos-mailserver/nixos-mailserver/-/archive/${release}/nixos-mailserver-${release}.tar.gz";
-      sha256 = "sd";
+      sha256 = "0xp7ip4vafi6wx38ghwa191v4d84h2l9pczw2jzxysh5qdcv4akb";
     })
   ];
 
   config = {
 
     mailserver = {
+      stateVersion = 5;
       enable = true;
-      fqdn = "mail.acelpb.com";
+      fqdn = "acelpb.com";
       domains = [ "acelpb.com" ];
-      loginAccounts = {
-          "a.borsu@acelpb.com" = {
-              hashedPasswordFile = "/etc/nixos/secrets/mail_a.borsu.hash";
+      # Accounts are defined in distant-secret.nix.
 
-              aliases = [
-                  "info@acelpb.com"
-                  "postmaster@acelpb.com"
-              ];
-          };
-          "cloud@acelpb.com" = {
-            hashedPasswordFile = "/etc/nixos/secrets/mail_cloud.hash";
-          };
-      };
-
-      # Use Let's Encrypt certificates. Note that this needs to set up a stripped
-      # down nginx and opens port 80.
-      certificateScheme = 3;
+      # Use the Let's Encrypt certificate of the acelpb.com virtual host (normandy.nix).
+      x509.useACMEHost = config.mailserver.fqdn;
 
       # Enable IMAP and POP3
       enableImap = true;
-      enablePop3 = true;
+      enablePop3 = false;
       enableImapSsl = true;
       enablePop3Ssl = true;
 
@@ -48,4 +39,5 @@ in
     };
 
   };
+
 }

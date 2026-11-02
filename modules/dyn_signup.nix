@@ -1,25 +1,27 @@
-{ config, lib, pkgs, ... }:
-{
-  config = let
-      name = "dyn_signup";
-      domain_name = "inscriptions.dynamobile.net";
-      tag = "latest";
-      port = "7778";
-  in {
-    security.polkit.extraConfig = ''
-      polkit.addRule(function(action, subject) {
-          if (action.id == "org.freedesktop.systemd1.manage-units" &&
-              action.lookup("unit") == "podman-${name}.service" &&
-              subject.user == "jenkins") {
-              return polkit.Result.YES;
-          }
-      });
-    '';
+{ lib, ... }:
+let
+  instance =
+    {
+      name,
+      domain_name,
+      tag,
+      port,
+    }:
+    {
+      security.polkit.extraConfig = ''
+        polkit.addRule(function(action, subject) {
+            if (action.id == "org.freedesktop.systemd1.manage-units" &&
+                action.lookup("unit") == "podman-${name}.service" &&
+                subject.user == "jenkins") {
+                return polkit.Result.YES;
+            }
+        });
+      '';
 
-    virtualisation.oci-containers.containers."${name}" = {
-      image = "localhost:5000/dynasignup:${tag}";
-      pull = "always";
-      ports = [ "127.0.0.1:${port}:${port}" ];
+      virtualisation.oci-containers.containers."${name}" = {
+        image = "localhost:5000/dynasignup:${tag}";
+        pull = "always";
+        ports = [ "127.0.0.1:${port}:${port}" ];
         volumes = [
           "/var/www/${name}/data:/app/data"
           "/var/www/${name}/uploads:/app/uploads"
@@ -30,19 +32,21 @@
           "uv"
           "run"
           "gunicorn"
-          "--access-logfile" "-"
-          "--workers" "3"
-          "--bind" "0.0.0.0:${port}"
+          "--access-logfile"
+          "-"
+          "--workers"
+          "3"
+          "--bind"
+          "0.0.0.0:${port}"
           "dynasignup.wsgi:application"
         ];
-    };
+      };
 
-    systemd.services."podman-${name}".postStart = ''
-      podman exec ${name} uv run python manage.py migrate
-    '';
+      systemd.services."podman-${name}".postStart = ''
+        podman exec ${name} uv run python manage.py migrate
+      '';
 
-    services.nginx.virtualHosts = {
-      "${domain_name}" = {
+      services.nginx.virtualHosts."${domain_name}" = {
         enableACME = true;
         forceSSL = true;
         locations = {
@@ -67,5 +71,20 @@
         };
       };
     };
-  };
+in
+{
+  config = lib.mkMerge [
+    (instance {
+      name = "dyn_signup_test";
+      domain_name = "inscriptions.acelpb.com";
+      tag = "test";
+      port = "7777";
+    })
+    (instance {
+      name = "dyn_signup";
+      domain_name = "inscriptions.dynamobile.net";
+      tag = "latest";
+      port = "7778";
+    })
+  ];
 }

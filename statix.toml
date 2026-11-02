@@ -1,0 +1,3 @@
+# Keys like `services.nginx` and `services.jenkins` read better when kept with the
+# code they belong to, and hardware-configuration.nix is generated.
+disabled = ["repeated_keys"]

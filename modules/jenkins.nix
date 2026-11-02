@@ -1,4 +1,4 @@
-{ config, lib, pkgs, ... }:
+{ config, pkgs, ... }:
 {
   config = {
 
@@ -21,20 +21,16 @@
       enable = true;
       port = 2711;
       listenAddress = "localhost";
-      packages = [ pkgs.stdenv pkgs.git pkgs.jdk11 config.programs.ssh.package pkgs.nix pkgs.podman ];
-      # jobBuilder = {
-      #   enable = true;
-      #   yamlJobs = ''
-      #     - job:
-      #         name: jenkins-job-test-1
-      #         builders:
-      #           - shell: echo 'Hello world!'
+      packages = [
+        pkgs.stdenv
+        pkgs.git
+        pkgs.jdk11
+        config.programs.ssh.package
+        pkgs.nix
+        pkgs.podman
+      ];
 
-      #   '';
-      # };
     };
-
-
 
     services.nginx.virtualHosts = {
       "jenkins.acelpb.com" = {
@@ -43,28 +39,6 @@
         locations = {
           "/" = {
             proxyPass = "http://localhost:${toString 2711}";
-            # extraConfig = ''
-            #   sendfile off;
-            #   proxy_redirect     default;
-            #   proxy_redirect     http://          https://;
-            #   proxy_set_header   Host              $host;
-            #   proxy_set_header   X-Real-IP         $remote_addr;
-            #   proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
-            #   proxy_set_header   X-Forwarded-Proto $scheme;
-            #   proxy_set_header   Upgrade           $http_upgrade;
-            #   proxy_set_header   Connection        "Upgrade";
-            #   proxy_max_temp_file_size 0;
-            #   #this is the maximum upload size
-            #   client_max_body_size       10m;
-            #   client_body_buffer_size    128k;
-            #   proxy_connect_timeout      90;
-            #   proxy_send_timeout         90;
-            #   proxy_read_timeout         90;
-            #   proxy_buffer_size          4k;
-            #   proxy_buffers              4 32k;
-            #   proxy_busy_buffers_size    64k;
-            #   proxy_temp_file_write_size 64k;
-            # '';
           };
         };
       };
