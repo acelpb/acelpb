@@ -35,6 +35,14 @@
           news
           richdocuments
           ;
+        # Not packaged in nixpkgs. A new release needs a new url, hash and appVersion.
+        shopping_list = pkgs.fetchNextcloudApp {
+          url = "https://github.com/otherworld-dev/Shopping-List/releases/download/v1.13.1/shopping_list.tar.gz";
+          hash = "sha256-yMLJXPkT4pDtIqWrSJ1XngaQyujXuKQLg/9ttOVp/JE=";
+          license = "agpl3Plus";
+          appName = "shopping_list";
+          appVersion = "1.13.1";
+        };
       };
 
       ##

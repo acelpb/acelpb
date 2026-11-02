@@ -51,7 +51,9 @@ Apps that Jenkins deploys, such as `dyn_signup`, also need:
 - state and `.env` kept under `/var/www/<name>/`
 
 Nextcloud apps come from Nix only, through `extraApps`. Do not enable the app store: it makes
-`occ upgrade` update packaged apps from the store, which crashes the upgrade.
+`occ upgrade` update packaged apps from the store, which crashes the upgrade. Apps that nixpkgs
+does not package use `pkgs.fetchNextcloudApp` and must be updated by hand. Before a Nextcloud
+major upgrade, check that their `max-version` allows the new version.
 
 ## Secrets
 
