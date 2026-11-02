@@ -9,7 +9,7 @@ mail and personal data. See `README.md` for what runs where and how to deploy.
   server decides package versions. The mail server pin in `modules/mail.nix` must match
   the channel.
 - `system.stateVersion = "23.11"`. Do not change it.
-- nginx with ACME in front of every web service, PostgreSQL 16, Nextcloud 33.
+- nginx with ACME in front of every web service, PostgreSQL 16, Nextcloud 34.
 - Podman is the `oci-containers` backend. Jenkins builds app images and pushes them to the
   local registry at `localhost:5000`.
 

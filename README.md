@@ -14,7 +14,7 @@ decides package versions.
 | Art gallery | annechristinefunk.com | `annechristinefunk.nix` | Django app from [acelpb/acfunk](https://github.com/acelpb/acfunk), in `/var/www/acfunk` |
 | Dynamobile sign-up | inscriptions.dynamobile.net | `dyn_signup.nix` | Container on port 7778, image tag `latest` |
 | Dynamobile sign-up (test) | inscriptions.acelpb.com | `dyn_signup.nix` | Container on port 7777, image tag `test` |
-| Nextcloud 33 | cloud.acelpb.com | `nextcloud.nix` | Data in `/var/www/nextcloud` |
+| Nextcloud 34 | cloud.acelpb.com | `nextcloud.nix` | Data in `/var/www/nextcloud` |
 | Collabora | collabora.acelpb.com | `nextcloud.nix` | Container on `127.0.0.1:9980`; the admin console needs an SSH tunnel |
 | Jenkins | jenkins.acelpb.com | `jenkins.nix` | Also runs the image registry on `localhost:5000` |
 | Mail | acelpb.com | `mail.nix` | NixOS mailserver; IMAP on 993, SMTP on 587; accounts in `distant-secret.nix` |
@@ -80,6 +80,27 @@ The SSH host `ac` must point at the server.
    `make deploy`.
 6. If glibc changed, PostgreSQL warns about a collation mismatch. Run `reindexdb --all` and
    `ALTER DATABASE <name> REFRESH COLLATION VERSION` for each database.
+
+## Upgrading Nextcloud
+
+Nextcloud can only move up one major version per deploy, and a NixOS rollback does not undo its
+database upgrade, so the dump below is your only way back.
+
+1. Change `package` in `modules/nextcloud.nix` and check that the configuration evaluates.
+2. Back up the database and config:
+
+   ```sh
+   ssh ac 'sudo -u postgres pg_dump -Fc -f /tmp/nextcloud.dump nextcloud && sudo mv /tmp/nextcloud.dump /root/ && sudo tar czf /root/nextcloud-config.tgz -C /var/www/nextcloud config'
+   ```
+
+3. Run `make deploy`. If the channel has moved, this also updates everything else.
+4. Check that `https://cloud.acelpb.com/status.php` shows the new version with
+   `needsDbUpgrade: false`, that `nextcloud-occ app:list` still shows your apps as enabled, and
+   that a document opens in Collabora.
+
+To go back, stop `phpfpm-nextcloud` and `nextcloud-cron.timer`, recreate the `nextcloud` database
+owned by the `nextcloud` role, restore the dump with `pg_restore -d nextcloud`, unpack the config
+archive, then run `nixos-rebuild switch --rollback`.
 
 ## Known gaps
 
