@@ -69,7 +69,9 @@ major upgrade, check that their `max-version` allows the new version.
 ## Deploying
 
 **Never deploy without an explicit instruction for that deploy.** That covers `make deploy`,
-`make cleanup`, and any `sudo` or state-changing command over `ssh ac`.
+`make cleanup`, and any `sudo` or state-changing command over `ssh ac`. The one exception is the
+daily job the owner set up in `scripts/daily-update.sh`, which runs without an agent. Do not run
+that script yourself, because it updates the server when the channel has moved.
 
 What to expect from a deploy:
 

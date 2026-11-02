@@ -68,6 +68,27 @@ The SSH host `ac` must point at the server.
 - `--upgrade` also updates the channel, so any deploy can change package versions.
 - Files you delete locally stay in `/etc/nixos`, because the copy does not delete anything.
 
+## Daily update
+
+An OpenClaw command job on the Mac runs `scripts/daily-update.sh` every day at 05:00. No AI model
+is involved.
+
+1. If the channel has moved, it runs `nixos-rebuild switch --upgrade` on the server.
+2. It checks for failed units, that every site responds, and that Nextcloud is healthy.
+
+It sends a WhatsApp message when something goes wrong, and when an update ran, listing the package
+versions that changed. On other days it stays silent. The full output is in
+`~/Library/Logs/acelpb-daily-update/` on the Mac, one file per day, kept for two years.
+
+It uses whatever configuration is already in `/etc/nixos`, so it never ships your working folder.
+Keep these limits in mind:
+
+- It takes no backup, even when the update includes a Nextcloud point release.
+- It does not reboot. Its message tells you when a new kernel is waiting for a manual reboot.
+- It only runs while the Mac is awake, and nothing tells you if it did not run.
+
+The list of sites is in the script. When you add or remove a site, update it there too.
+
 ## Upgrading NixOS
 
 1. Read the [NixOS release notes](https://nixos.org/manual/nixos/stable/release-notes) and the
