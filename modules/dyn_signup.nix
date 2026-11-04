@@ -1,4 +1,4 @@
-{ lib, ... }:
+_:
 let
   instance =
     {
@@ -73,18 +73,24 @@ let
     };
 in
 {
-  config = lib.mkMerge [
-    (instance {
-      name = "dyn_signup_test";
-      domain_name = "inscriptions.acelpb.com";
-      tag = "test";
-      port = "7777";
-    })
-    (instance {
-      name = "dyn_signup";
-      domain_name = "inscriptions.dynamobile.net";
-      tag = "latest";
-      port = "7778";
-    })
-  ];
+  config = instance {
+    name = "dyn_signup";
+    domain_name = "inscriptions.dynamobile.net";
+    tag = "latest";
+    port = "7778";
+  };
+  # config = lib.mkMerge [
+  #   (instance {
+  #     name = "dyn_signup_test";
+  #     domain_name = "inscriptions.acelpb.com";
+  #     tag = "test";
+  #     port = "7777";
+  #   })
+  #   (instance {
+  #     name = "dyn_signup";
+  #     domain_name = "inscriptions.dynamobile.net";
+  #     tag = "latest";
+  #     port = "7778";
+  #   })
+  # ];
 }

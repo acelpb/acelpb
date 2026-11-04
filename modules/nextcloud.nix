@@ -89,6 +89,17 @@
               proxy_set_header Host $host;
             }
 
+            # Document conversion: only the server itself, for Nextcloud previews.
+            location ^~ /cool/convert-to {
+              allow 127.0.0.1;
+              allow ::1;
+              allow 149.202.40.75;
+              allow 2001:41d0:404:300::8f1;
+              deny all;
+              proxy_pass http://127.0.0.1:9980;
+              proxy_set_header Host $host;
+            }
+
             # Capabilities
             location ^~ /hosting/capabilities {
               proxy_pass http://127.0.0.1:9980;
@@ -131,9 +142,7 @@
         extra_params = "--o:ssl.enable=false --o:ssl.termination=true";
       };
       environmentFiles = [ "/etc/nixos/secrets/collabora.env" ];
-      extraOptions = [
-        "--pull=missing"
-      ];
+      pull = "newer";
     };
   };
 }

@@ -111,6 +111,17 @@
           Restart = "always";
           RestartSec = "10s";
           User = "jenkins";
+
+          NoNewPrivileges = true;
+          ProtectSystem = "strict";
+          ProtectHome = true;
+          PrivateTmp = true;
+          PrivateDevices = true;
+          ReadWritePaths = [ "/var/www/acfunk" ];
+          InaccessiblePaths = [
+            "/run/podman"
+            "/var/lib/jenkins"
+          ];
         };
       };
 
