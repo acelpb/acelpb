@@ -100,4 +100,17 @@
     };
   };
 
+  services.fail2ban.bantime-increment.enable = true;
+  services.fail2ban.jails = {
+    postfix-sasl.settings = {
+      enabled = true;
+      filter = "postfix[mode=auth]";
+      maxretry = 5;
+    };
+    dovecot.settings = {
+      enabled = true;
+      filter = "dovecot[mode=aggressive]";
+      maxretry = 5;
+    };
+  };
 }
