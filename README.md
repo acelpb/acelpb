@@ -18,7 +18,7 @@ decides package versions.
 | Collabora | collabora.acelpb.com | `nextcloud.nix` | Container on `127.0.0.1:9980`; the admin console needs an SSH tunnel |
 | Jenkins | jenkins.acelpb.com | `jenkins.nix` | Also runs the image registry on `localhost:5000` |
 | Mail | acelpb.com | `mail.nix` | NixOS mailserver; IMAP on 993, SMTP on 587; accounts in `distant-secret.nix` |
-| PostgreSQL 16 | local only | `postgres.nix` | Used by Nextcloud and the gallery |
+| PostgreSQL 18 | local only | `postgres.nix` | Used by Nextcloud and the gallery |
 
 `modules/minecraft.nix` is a Bedrock server that is switched off. To use it, uncomment its import.
 
@@ -83,11 +83,36 @@ versions that changed. On other days it stays silent. The full output is in
 It uses whatever configuration is already in `/etc/nixos`, so it never ships your working folder.
 Keep these limits in mind:
 
-- It takes no backup, even when the update includes a Nextcloud point release.
+- It takes no backup of its own, even when the update includes a Nextcloud point release. The
+  nightly backup is at most a day old.
 - It does not reboot. Its message tells you when a new kernel is waiting for a manual reboot.
 - It only runs while the Mac is awake, and nothing tells you if it did not run.
 
 The list of sites is in the script. When you add or remove a site, update it there too.
+
+## Backups
+
+The NAS at home (a QNAP TS-231P2, SSH host `nas`) pulls a backup every night. The server never
+connects to the NAS, so nothing at home is open to the internet, and someone who breaks into the
+server cannot delete the backups.
+
+1. At 02:30 the server dumps every database to `/var/backup/postgresql` (`modules/backup.nix`).
+2. At 03:30 the NAS runs `scripts/nas-backup.sh` from cron and logs in as `nas-backup`. That
+   account's key can only download with rsync, and its rsync can read every file but write none.
+3. Each run is a snapshot in `/share/CACHEDEV1_DATA/.acelpb-backup/snapshots` on the NAS.
+   Unchanged files are hard links to the previous snapshot. Snapshots are kept for 14 days,
+   Sunday ones for 60 days and those from the 1st of the month for 400 days.
+
+It backs up `/etc/nixos` (with `secrets/`), the database dumps, `/var/www` (Nextcloud and the
+sites, without Nextcloud previews), mail (`/var/vmail`, `/var/sieve`, `/var/dkim`) and Jenkins
+(without its workspace). The daily update job reports a backup older than 36 hours, but only when
+the Mac can reach the NAS.
+
+The snapshots hold secrets and password hashes, unencrypted, so they are only readable by `admin`
+on the NAS. To restore, copy files back from a snapshot, for example
+`rsync -a --numeric-ids <snapshot>/var/www/nextcloud/ ...`, and load a dump with
+`zstd -dc all.sql.zst | psql -U postgres`. The database and the Nextcloud files are copied an hour
+apart, so run `nextcloud-occ files:scan --all` after restoring both.
 
 ## Upgrading NixOS
 
@@ -130,8 +155,7 @@ archive, then run `nixos-rebuild switch --rollback`.
 
 ## Known gaps
 
-- **No backups are configured.**
-- PostgreSQL trusts all local connections.
+- The backup is on one NAS in one place, and is not encrypted.
 - `files_trashbin` is disabled in Nextcloud, so deleted files are gone immediately.
 
 ## Useful tests

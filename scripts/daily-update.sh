@@ -10,7 +10,6 @@ https://acelpb.com
 https://annechristinefunk.com
 https://cloud.acelpb.com/login
 https://collabora.acelpb.com/hosting/capabilities
-https://inscriptions.acelpb.com
 https://inscriptions.dynamobile.net
 https://jenkins.acelpb.com/login
 "
@@ -125,6 +124,17 @@ case "$status" in
   *) problems="$problems
 Nextcloud is not healthy: ${status:-no status}" ;;
 esac
+
+# The NAS at home pulls a backup every night (scripts/nas-backup.sh). Only check it when the NAS
+# can be reached, so that being away from home does not raise an alert.
+if last_backup=$(ssh -o BatchMode=yes -o ConnectTimeout=10 nas cat /share/CACHEDEV1_DATA/.acelpb-backup/last-success 2>/dev/null); then
+  if [ $(($(date +%s) - last_backup)) -gt 129600 ]; then
+    problems="$problems
+the last backup on the NAS is more than 36 hours old"
+  fi
+else
+  log "could not check the NAS backup"
+fi
 
 if [ -n "$problems" ]; then
   fail "something is wrong:$problems${report:+

@@ -56,6 +56,15 @@ in
         filter = "dovecot[mode=aggressive]";
         maxretry = 5;
       };
+      # Bots that try to send spam through the server ("Relay access denied") and SMTP scanners.
+      # Most come from one address only once, so this mainly stops the ones that keep trying.
+      postfix.settings = {
+        enabled = true;
+        filter = "postfix[mode=normal]";
+        maxretry = 3;
+        findtime = "1d";
+        bantime = "1d";
+      };
     };
 
   };

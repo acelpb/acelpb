@@ -64,7 +64,18 @@
       settings = {
         log_type = "file";
         default_phone_region = "BE";
+        # Only one PHP server, so any fixed ID will do.
+        serverid = 0;
+        # Notifications and shares go out through the local mail server (mail.nix), which signs
+        # them with DKIM. It accepts mail from localhost without a login.
+        mail_from_address = "cloud";
+        mail_domain = "acelpb.com";
+        # The mail server's certificate is for acelpb.com, not 127.0.0.1.
+        mail_smtpstreamoptions.ssl.peer_name = "acelpb.com";
       };
+
+      # The default of 8 MB is nearly full.
+      phpOptions."opcache.interned_strings_buffer" = "16";
     };
 
     services.nginx.virtualHosts = {

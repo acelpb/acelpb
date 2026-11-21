@@ -29,6 +29,12 @@
     ];
   };
 
+  # The NAS that pulls the nightly backup (modules/backup.nix). The forced command only allows
+  # rsync downloads.
+  users.users.nas-backup.openssh.authorizedKeys.keys = [
+    ''restrict,command="/run/current-system/sw/bin/nas-backup-rsync-sender" ssh-ed25519 AAAA<the NAS public key> nas-backup''
+  ];
+
   services.openssh = {
     enable = true;
     settings = {
